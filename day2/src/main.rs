@@ -1,14 +1,18 @@
 const INPUT: &str = include_str!("../input");
 
 fn main() {
-    let ans: usize = INPUT
-        .lines()
-        .map(Game::from)
-        .filter(Game::is_possible)
-        .map(|g| g.id)
-        .sum();
+    let games: Vec<Game> = INPUT.lines().map(Game::from).collect();
 
-    println!("answer: {ans}");
+    let ans1: usize = games.iter().filter(|g| g.is_possible()).map(|g| g.id).sum();
+
+    println!("answer: {ans1}");
+
+    let ans2: usize = games
+        .iter()
+        .map(Game::minimum_set)
+        .map(BallSet::power)
+        .sum();
+    println!("answer: {ans2}");
 }
 
 struct Game {
@@ -35,6 +39,10 @@ impl From<&str> for Game {
 impl Game {
     fn is_possible(&self) -> bool {
         self.turns.iter().all(Turn::is_possible)
+    }
+
+    fn minimum_set(&self) -> BallSet {
+        self.turns.iter().fold(BallSet::default(), BallSet::include)
     }
 }
 
@@ -67,5 +75,34 @@ impl From<&str> for Turn {
 impl Turn {
     fn is_possible(&self) -> bool {
         self.red <= 12 && self.green <= 13 && self.blue <= 14
+    }
+}
+
+struct BallSet {
+    red: usize,
+    green: usize,
+    blue: usize,
+}
+
+impl BallSet {
+    fn power(self) -> usize {
+        self.red * self.green * self.blue
+    }
+
+    fn include(mut self, turn: &Turn) -> Self {
+        self.red = self.red.max(turn.red);
+        self.green = self.green.max(turn.green);
+        self.blue = self.blue.max(turn.blue);
+        self
+    }
+}
+
+impl Default for BallSet {
+    fn default() -> Self {
+        Self {
+            red: 0,
+            green: 0,
+            blue: 0,
+        }
     }
 }
