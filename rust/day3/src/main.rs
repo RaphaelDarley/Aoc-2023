@@ -1,7 +1,7 @@
 const INPUT: &str = include_str!("../input");
 
 fn main() {
-    let schematic: Schematic = INPUT.into();
+    let mut schematic: Schematic = INPUT.into();
 
     println!(
         "{}",
@@ -32,6 +32,18 @@ fn main() {
     );
 
     println!("part1 result: {total}");
+
+    serials.iter().for_each(|s| s.annotate(&mut schematic));
+    let ratios: usize = schematic
+        .symbols
+        .iter()
+        .map(|r| r.iter())
+        .flatten()
+        .filter(|s| s.serials.len() == 2)
+        .map(|s| s.serials.iter().map(|ser| ser.number).product::<usize>())
+        .sum();
+
+    println!("part2 result: {ratios}");
 }
 
 struct Schematic {
@@ -68,7 +80,7 @@ impl From<&str> for Schematic {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Serial {
     number: usize,
     length: usize,
@@ -146,5 +158,45 @@ impl Serial {
             })
             .flatten()
             .collect()
+    }
+
+    fn annotate(&self, schematic: &mut Schematic) {
+        let (i, j) = self.position;
+
+        if i > 0 {
+            let line = schematic.symbols.get_mut(i - 1).unwrap();
+
+            for sym in line
+                .iter_mut()
+                .skip(if j > 0 { j - 1 } else { 0 })
+                .take(self.length + 2)
+                .filter(|b| b.is_symbol)
+            {
+                sym.serials.push(*self);
+            }
+        }
+
+        {
+            let line = schematic.symbols.get_mut(i).unwrap();
+            for sym in line
+                .iter_mut()
+                .skip(if j > 0 { j - 1 } else { 0 })
+                .take(self.length + 2)
+                .filter(|b| b.is_symbol)
+            {
+                sym.serials.push(*self);
+            }
+        }
+
+        if let Some(line) = schematic.symbols.get_mut(i + 1) {
+            for sym in line
+                .iter_mut()
+                .skip(if j > 0 { j - 1 } else { 0 })
+                .take(self.length + 2)
+                .filter(|b| b.is_symbol)
+            {
+                sym.serials.push(*self);
+            }
+        }
     }
 }
